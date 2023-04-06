@@ -1,0 +1,28 @@
+{
+  "name": "root",
+  "version": "0.1.0",
+  "description": "",
+  "main": "index.js",
+  "engines": {
+    "npm": ">=8.19.2",
+    "node": ">=18.11.0"
+  },
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "demo": "concurrently \"npm -w demo-frontend start\" \"npm -w demo-backend start\"",
+    "example": "npm -w example run main"
+  },
+  "author": "",
+  "license": "Apache-2.0",
+  "workspaces": [
+    "packages/smartknobjs-proto",
+    "packages/smartknobjs",
+    "packages/demo-backend",
+    "packages/demo-frontend",
+    "packages/example"
+  ],
+  "devDependencies": {
+    "concurrently": "^7.6.0",
+    "eslint-config-prettier": "^8.5.0"
+  }
+}

@@ -1,0 +1,58 @@
+syntax = "proto3";
+
+import "nanopb.proto";
+
+package PB;
+
+/*
+ * Message FROM the SmartKnob to USB host
+ */
+message FromSmartKnob {
+    oneof payload {
+        Ack ack = 1;
+        Log log = 2;
+        SmartKnobState smartknob_state = 3;
+    }
+}
+
+message Ack {
+    uint32 nonce = 1;
+}
+
+message Log {
+    string msg = 1 [(nanopb).max_length = 255];
+}
+
+message SmartKnobState {
+    int32 current_position = 1;
+    float sub_position_unit = 2;
+    SmartKnobConfig config = 3;
+}
+
+/*
+ * Message TO the Smartknob from the USB host
+ */
+message ToSmartknob {
+    uint32 nonce = 1;
+
+    oneof payload {
+        RequestState request_state = 2;
+        SmartKnobConfig smartknob_config = 3;
+    }
+}
+
+message SmartKnobConfig {
+    int32 position = 1;
+    int32 min_position = 2;
+    int32 max_position = 3;
+    float position_width_radians = 4;
+    float detent_strength_unit = 5;
+    float endstop_strength_unit = 6;
+    float snap_point = 7;
+    string text = 8 [(nanopb).max_length = 50];
+    repeated int32 detent_positions = 9 [(nanopb).max_count = 5];
+    float snap_point_bias = 10;
+}
+
+message RequestState {}
+

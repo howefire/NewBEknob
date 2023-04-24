@@ -7,7 +7,9 @@
 #include <BleKeyboard.h>
 #define SERIAL_PROTOCOL_LEGACY 0
 #define SERIAL_PROTOCOL_PROTO 1
+#define SERIAL_PROTOCOL_JSON 2
 
+//定义一个参数为uint8类型，返回值为void类型的函数对象
 typedef std::function<void(uint8_t)> ProtocolChangeCallback;
 
 class SerialProtocol : public Logger {

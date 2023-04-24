@@ -9,6 +9,14 @@
 #endif
 #include "util.h"
 
+double MotorTask::diff(double a,double b)
+{
+    //计算误差值
+    float max_val = std::max(target,motor.shaft_angle); 
+    float min_val = std::min(target,motor.shaft_angle); 
+    float diff = std::abs(max_val -min_val) ;  
+    return diff;    
+}
 // #### 
 // Hardware-specific motor calibration constants.
 // Run calibration once at startup, then update these constants with the calibration results.
@@ -33,8 +41,8 @@ static const float IDLE_CORRECTION_MAX_ANGLE_RAD = 5 * PI / 180;
 static const float IDLE_CORRECTION_RATE_ALPHA = 0.0005;
 //新增加切换震动效果
 
-
-MotorTask::MotorTask(const uint8_t task_core) : Task("Motor", 2500, 1, task_core) {
+MotorTask::MotorTask(const uint8_t task_core) : Task("Motor", 2500, 1, task_core) 
+{
     queue_ = xQueueCreate(5, sizeof(Command));
     assert(queue_ != NULL);
 }
@@ -47,10 +55,12 @@ MotorTask::~MotorTask() {}
 #elif SENSOR_MT6701
     MT6701Sensor encoder = MT6701Sensor();
 #endif
-
+TaskHandle_t myTaskHandle;
 
 void MotorTask::run() {
+
     //设置驱动器电压
+    
     driver.voltage_power_supply = 3.5;
     //驱动器初始化
     driver.init();
@@ -83,14 +93,11 @@ void MotorTask::run() {
 
     //电机初始化
     motor.init();
-
     encoder.update();
     delay(10);
-
     motor.pole_pairs = MOTOR_POLE_PAIRS;
     //校准编码器、启用FOC
     motor.initFOC(ZERO_ELECTRICAL_OFFSET, FOC_DIRECTION);
-
     motor.monitor_downsample = 0; // disable monitor at first - optional
 
     // disableCore0WDT();
@@ -108,10 +115,9 @@ void MotorTask::run() {
     float idle_check_velocity_ewma = 0;
     uint32_t last_idle_start = 0;
     uint32_t last_publish = 0;
-
     while (1) {
         motor.loopFOC();
-
+    
         // Check queue for pending requests from other tasks
         Command command;
         //检测配置的改变
@@ -164,14 +170,6 @@ void MotorTask::run() {
                     config = newConfig;
                     //log("Got new config");
 
-                    // Update derivative factor of torque controller based on detent width.
-                    // If the D factor is large on coarse detents, the motor ends up making noise because the P&D factors amplify the noise from the sensor.
-                    // This is a piecewise linear function so that fine detents (small width) get a higher D factor and coarse detents get a small D factor.
-                    // Fine detents need a nonzero D factor to artificially create "clicks" each time a new value is reached (the P factor is small
-                    // for fine detents due to the smaller angular errors, and the existing P factor doesn't work well for very small angle changes (easy to
-                    // get runaway due to sensor noise & lag)).
-                    // TODO: consider eliminating this D factor entirely and just "play" a hardcoded haptic "click" (e.g. a quick burst of torque in each
-                    // direction) whenever the position changes when the detent width is too small for the P factor to work well.
                     const float derivative_lower_strength = config.detent_strength_unit * 0.1;//反馈力量降低配
                     const float derivative_upper_strength = config.detent_strength_unit * 0.02;//反馈力量高配
                     const float derivative_position_width_lower = radians(3); //震动点宽度系数低配
@@ -179,10 +177,7 @@ void MotorTask::run() {
                     //在position_width_radians这个值里我们知道了，一个值它所需占用的角度。
                     //要在这个角度中算出这个角度的中心位置，也就是输出扭矩的位置
                     const float raw = derivative_lower_strength + (derivative_upper_strength - derivative_lower_strength)/(derivative_position_width_upper - derivative_position_width_lower)*(config.position_width_radians - derivative_position_width_lower);
-                    // When there are intermittent detents (set via detent_positions), disable derivative factor as this adds extra "clicks" when nearing
-                    // a detent.
-                    //如果总输出震动的点是固定的，那么就按照固定点去输出，如果不是固定的，那就去下面的计算找到输出震动的点。
-                    // CLAMP可以将随机变化的值限制在一个给定的区间[min,max]内
+                   
                     motor.PID_velocity.D = config.detent_positions_count > 0 ? 0 : CLAMP(
                         raw,
                         min(derivative_lower_strength, derivative_upper_strength),
@@ -212,11 +207,12 @@ void MotorTask::run() {
                    // motor_shake(3,4);
                     break;
                 }
+               
             }
         }
-
-        // If we are not moving and we're close to the center (but not exactly there), slowly adjust the centerpoint to match the current position
-        //如果没有在转动电机，停止位置靠近点位中心，慢慢调整到中心
+        
+        
+        
         idle_check_velocity_ewma = motor.shaft_velocity * IDLE_VELOCITY_EWMA_ALPHA + idle_check_velocity_ewma * (1 - IDLE_VELOCITY_EWMA_ALPHA);
         if (fabsf(idle_check_velocity_ewma) > IDLE_VELOCITY_RAD_PER_SEC) {
             last_idle_start = 0;
@@ -229,10 +225,6 @@ void MotorTask::run() {
             current_detent_center = motor.shaft_angle * IDLE_CORRECTION_RATE_ALPHA + current_detent_center * (1 - IDLE_CORRECTION_RATE_ALPHA);
         }
 
-        // Check where we are relative to the current nearest detent; update our position if we've moved far enough to snap to another detent
-
-        //检查我们相对于当前最近的制动器的位置;如果我们移动得足够远，可以用另一个制动器，请更新我们的位置
-        // 现在位置-上次记录位置
         float angle_to_detent_center = motor.shaft_angle - current_detent_center;
         #if SK_INVERT_ROTATION //按钮反转
             angle_to_detent_center = -motor.shaft_angle - current_detent_center;
@@ -269,7 +261,6 @@ void MotorTask::run() {
 
 
         // Apply motor torque based on our angle to the nearest detent (detent strength, etc is handled by the PID_velocity parameters)
-        
         if (fabsf(motor.shaft_velocity) > 60) {
            //如果转动速度过快，不要施加扭矩，否则电流过大芯片供应不上 立马就死给看
             motor.move(0);
@@ -289,13 +280,36 @@ void MotorTask::run() {
                     input = 0;
                 }
             }
-            float torque = motor.PID_velocity(input);
+            float angle_torque=0,torque = motor.PID_velocity(input);
             #if SK_INVERT_ROTATION
                 torque = -torque;
             #endif
-            motor.move(torque);
+                if(controltype == 0){
+                    // snprintf(buf_, sizeof(buf_), "torque= %f input =%f",torque,input);
+                    // log(buf_);
+                    motor.move(torque);
+                }else{
+                    static double P = 0 ;//加入误差比例项P
+                    if(0.2 > diff(motor.shaft_angle,target) && diff(motor.shaft_angle,target) > 0.001)
+                    {
+                        P = diff(motor.shaft_angle,target)*1.3; 
+                    }else{
+                        P=0;
+                    }
+                    float an_input = motor.shaft_angle - target + dead_zone_adjustment;
+                    angle_torque = (abs(an_input)*0.9)+P;
+                    // snprintf(buf_, sizeof(buf_), "P = %f,controltype = %d an_input = %f,angle_torque = %f, target= %f,now_angle = %f,",i,controltype,an_input,angle_torque,target,motor.shaft_angle);
+                    // log(buf_);
+                    if(target<motor.shaft_angle)
+                    {   
+                        log("turn left??");
+                        motor.move(-angle_torque);
+                     }else if(target>motor.shaft_angle)
+                    {   log("turn right??");
+                        motor.move(angle_torque);
+                    }   
+                }
         }
-
         // Publish current status to other registered tasks periodically
         if (millis() - last_publish > 5) {
             publish({

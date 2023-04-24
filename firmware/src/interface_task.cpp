@@ -16,6 +16,8 @@
 #include "bleradial.h"
 #include "btAudio.h"
 #include "freertos/FreeRTOS.h"
+#include "btAudio.h"
+
 #if SK_LEDS
 CRGB leds[NUM_LEDS];
 #endif
@@ -30,6 +32,8 @@ Adafruit_VEML7700 veml = Adafruit_VEML7700();
 uint8_t pages;
 
 BleKeyboard bleKeyboard("NBTLE","ZC",100);
+//tAudio audio = btAudio("ESP_Speaker66");
+
  PB_SmartKnobConfig configs[] = {
    
 
@@ -197,7 +201,8 @@ InterfaceTask::InterfaceTask(const uint8_t task_core, MotorTask& motor_task, Dis
         stream_(),
         motor_task_(motor_task),
         display_task_(display_task),
-        plaintext_protocol_(stream_, motor_task_),
+        plaintext_protocol_(stream_, motor_task_),//赋给通信协议使用stream_，motor_task_类能力
+        Json_protocol_(stream_, motor_task_),
         proto_protocol_(stream_, motor_task_) {
     #if SK_DISPLAY
         assert(display_task != nullptr);
@@ -240,26 +245,38 @@ void InterfaceTask::run() {
     motor_task_.addListener(knob_state_queue_);
   
     //bleKeyboard.begin();
+    // audio.begin();
+    // audio.reconnect();
     // Start in legacy protocol mode
-    plaintext_protocol_.init([this] () {
-        changeConfig(true);
+    //
+    plaintext_protocol_.init([this] () {//使用lambada表达式，实际上传递InterfaceTask本类地址
+        changeConfig(true);//在SerialProtocolPlaintext类中init()方法中调用changeConfig
     });
-    SerialProtocol* current_protocol = &plaintext_protocol_;
-
-    ProtocolChangeCallback protocol_change_callback = [this, &current_protocol] (uint8_t protocol) {
+    //将现在协议，指向SerialProtocolPlaintext协议、
+    SerialProtocol* current_protocol = &proto_protocol_;
+    //判断current_protocol通信协议为哪个
+    //[this, &current_protocol]可以访问的列表，本类，当前协议指针，指定协议类型，
+    //也就是说调用该方法，传入protocol值，即可修改使用的协议对象
+    ProtocolChangeCallback protocol_change_callback = [this, &current_protocol] (uint8_t protocol) 
+    {
         switch (protocol) {
             case SERIAL_PROTOCOL_LEGACY:
                 current_protocol = &plaintext_protocol_;
+                log("Switch to legacy protocol");
                 break;
             case SERIAL_PROTOCOL_PROTO:
                 current_protocol = &proto_protocol_;
+                 log("Switch to proto protocol");
                 break;
+            case SERIAL_PROTOCOL_JSON:
+                current_protocol = &Json_protocol_;
+                 log("Switch to proto Json_protocol_");
             default:
                 log("Unknown protocol requested");
                 break;
         }
     };
-
+    //启用修改后的协议
     plaintext_protocol_.setProtocolChangeCallback(protocol_change_callback);
     proto_protocol_.setProtocolChangeCallback(protocol_change_callback);
     
@@ -271,10 +288,8 @@ void InterfaceTask::run() {
       
         //主动上传
         if (xQueueReceive(knob_state_queue_, &state, 0) == pdTRUE  ) {
+            //
             current_protocol->handleState(state);
-        
-                //log("into");
-                
         }
         current_protocol->loop();
 
@@ -286,15 +301,15 @@ void InterfaceTask::run() {
         }
 
         updateHardware(&state);
-        if (millis() - last_publish > 500) {
-            char *buf = (char*)malloc(40);
-            // vTaskGetRunTimeStats(buf);
-            // log(buf);
-            snprintf(buf_, sizeof(buf_), "esp_get_free_heap_size %d ",esp_get_free_heap_size());
-            log(buf_);
-            free(buf);
-            last_publish = millis();
-        }
+        // if (millis() - last_publish > 500) {
+        //     char *buf = (char*)malloc(40);
+        //     // vTaskGetRunTimeStats(buf);
+        //     // log(buf);
+        //     snprintf(buf_, sizeof(buf_), "esp_get_free_heap_size %d ",esp_get_free_heap_size());
+        //     log(buf_);
+        //     free(buf);
+        //     last_publish = millis();
+        // }
         
         
     }
@@ -322,7 +337,7 @@ void InterfaceTask::changeConfig(bool next) {
     pages = current_config_;
     char buf_[256];
     //snprintf(buf_, sizeof(buf_), "Changing config to %d -- %s", current_config_, configs[current_config_].text);
-    log(buf_);
+    //log(buf_);
     motor_task_.setConfig(configs[current_config_]);
 }
 

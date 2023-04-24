@@ -12,11 +12,10 @@ static DisplayTask* display_task_p = &display_task;
 #else
 static DisplayTask* display_task_p = nullptr;
 #endif
-static MotorTask motor_task(1);
+MotorTask motor_task(1);
 btAudio audio = btAudio("ESP_Speaker66");
-
-
 InterfaceTask interface_task(0, motor_task, display_task_p);//实例化类
+Stream& stream = Serial;
 
 void setup() {
   audio.begin();
@@ -28,8 +27,9 @@ void setup() {
   
   motor_task.setLogger(&interface_task);
   motor_task.begin();
+ 
   interface_task.begin();
-
+  
   // Free up the Arduino loop task
   vTaskDelete(NULL);
 }

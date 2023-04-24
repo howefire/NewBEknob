@@ -1,6 +1,5 @@
 #include "btAudio.h"
 #include <Preferences.h> 
-#include "BleKeyboard.h"
 // For saving audio source BT addr for auto-reconnect
 ////////////////////////////////////////////////////////////////////
 ////////////// Nasty statics for i2sCallback ///////////////////////

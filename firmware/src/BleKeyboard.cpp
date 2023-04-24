@@ -119,8 +119,8 @@ void BleKeyboard::begin(void)
   outputKeyboard->setCallbacks(this);
 
 hid->manufacturer()->setValue("Microsoft 2");
-  hid->pnp(0x02, 0xe502, 0xa111, 0x0210);
-  hid->hidInfo(0x01,0x0E);
+hid->pnp(0x02, vid, pid, version);
+hid->hidInfo(0x00, 0x01);
 
 
 #if defined(USE_NIMBLE)

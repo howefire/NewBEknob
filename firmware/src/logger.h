@@ -3,7 +3,7 @@
 
 class Logger {
     public:
-        bool output_io = true;
+        bool output_io = false;
         uint8_t Recv_buf[120];
         size_t rec_len =0;
         uint8_t sned_len;

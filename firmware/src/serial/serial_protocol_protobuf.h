@@ -9,7 +9,7 @@
 #include <BleKeyboard.h>
 
 
-
+//此为输出模式数值量变化协议，用于监控模式量变化。
 class SerialProtocolProtobuf : public SerialProtocol {
     public:
         SerialProtocolProtobuf(Stream& stream, MotorTask& motor_task);

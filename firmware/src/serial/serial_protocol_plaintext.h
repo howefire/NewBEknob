@@ -1,11 +1,12 @@
 #pragma once
 
 #include "../proto_gen/smartknob.pb.h"
-
 #include "motor_task.h"
 #include "serial_protocol.h"
 #include "uart_stream.h"
 #include <BleKeyboard.h>
+#include "cJSON.h"
+
 typedef struct {
     uint8_t device_id;
     uint8_t write_cmd;
@@ -56,19 +57,19 @@ class SerialProtocolPlaintext : public SerialProtocol {
         ~SerialProtocolPlaintext(){}
         void log(const char* msg) override;
         void loop() override;
-        void esp32_serial_send(uint8_t *data, uint8_t length);
         void handleState(const PB_SmartKnobState& state) override;
+        void esp32_serial_send(uint8_t *data, uint8_t length);
         void send_system_state(uint8_t st,uint8_t end,PB_SmartKnobState& state);
         void init(DemoConfigChangeCallback cb);
         uint8_t crc8_MAXIM(uint8_t *data, uint8_t len);
         void changeConfigtoSpecific(uint8_t mode);
         void Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8_t Specific_data,uint8_t datalen);
-        void moto_config_data(uint8_t *data[]);
+        
+       
     private:
-        
-        
         Stream& stream_;
         MotorTask& motor_task_;
         PB_SmartKnobState latest_state_ = {};
         DemoConfigChangeCallback demo_config_change_callback_;
 };
+

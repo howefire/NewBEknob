@@ -36,13 +36,14 @@ class Task {
         TaskHandle_t getHandle() {
             return taskHandle;
         }
-
+        //main 调用这里创建线程，taskFunction 运行该静态函数
         void begin() {
             BaseType_t result = xTaskCreatePinnedToCore(taskFunction, name, stackDepth, this, priority, &taskHandle, coreId);
             assert("Failed to create task" && result == pdPASS);
         }
-
+        
     private:
+        //使用模板函数类型，将给过来的类，类型，转为指针，然后调用该指向该类指针里的run函数
         static void taskFunction(void* params) {
             T* t = static_cast<T*>(params);
             t->run();

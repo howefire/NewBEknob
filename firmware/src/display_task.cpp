@@ -3,11 +3,12 @@
 #include "semaphore_guard.h"
 
 #include "font/roboto_light_60.h"
-#include <BleKeyboard.h>
+//#include <BleKeyboard.h>
 #include <BluetoothSerial.h>
 static const uint8_t LEDC_CHANNEL_LCD_BACKLIGHT = 0;
 //构造
-DisplayTask::DisplayTask(const uint8_t task_core) : Task{"Display", 2048, 1, task_core} {
+DisplayTask::DisplayTask(const uint8_t task_core) : Task{"Display", 2048, 1, task_core} 
+{
   knob_state_queue_ = xQueueCreate(1, sizeof(PB_SmartKnobState));
   assert(knob_state_queue_ != NULL);
 
@@ -94,6 +95,15 @@ void DisplayTask::run() {
           float range_radians = (state.config.max_position - state.config.min_position) * state.config.position_width_radians;
           left_bound = PI / 2 + range_radians / 2;
           float right_bound = PI / 2 - range_radians / 2;
+          char buf_ [60];
+          // snprintf(buf_, sizeof(buf_), "left_bound x= %.6f  left_bound y=%.6f",TFT_WIDTH/2 + RADIUS * cosf(left_bound),TFT_HEIGHT/2 - RADIUS *sinf(left_bound));
+          // log(buf_);
+
+          for(uint16_t i = 0 ;i<(state.config.max_position - state.config.min_position);i++){
+            spr_.drawLine(TFT_WIDTH/2 + RADIUS * cosf(left_bound-i*state.config.position_width_radians), TFT_HEIGHT/2 - RADIUS * sinf(left_bound-i*state.config.position_width_radians),TFT_WIDTH/2 + (RADIUS - 10) * cosf(left_bound-i*state.config.position_width_radians),TFT_HEIGHT/2 - (RADIUS - 10) * sinf(left_bound-i*state.config.position_width_radians),TFT_WHITE);
+            //spr_.drawLine(TFT_WIDTH/2 + RADIUS * cosf(right_bound), TFT_HEIGHT/2 - RADIUS * sinf(right_bound), TFT_WIDTH/2 + (RADIUS - 10) * cosf(right_bound), TFT_HEIGHT/2 - (RADIUS - 10) * sinf(right_bound), TFT_WHITE);
+            
+          }
           spr_.drawLine(TFT_WIDTH/2 + RADIUS * cosf(left_bound), TFT_HEIGHT/2 - RADIUS * sinf(left_bound), TFT_WIDTH/2 + (RADIUS - 10) * cosf(left_bound), TFT_HEIGHT/2 - (RADIUS - 10) * sinf(left_bound), TFT_WHITE);
           spr_.drawLine(TFT_WIDTH/2 + RADIUS * cosf(right_bound), TFT_HEIGHT/2 - RADIUS * sinf(right_bound), TFT_WIDTH/2 + (RADIUS - 10) * cosf(right_bound), TFT_HEIGHT/2 - (RADIUS - 10) * sinf(right_bound), TFT_WHITE);
         }

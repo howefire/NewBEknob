@@ -51,8 +51,14 @@
         "utility": "cpp",
         "typeinfo": "cpp",
         "random": "cpp",
-        "string": "cpp"
+        "string": "cpp",
+        "bitset": "cpp",
+        "thread": "cpp"
     },
     "cmake.configureOnOpen": false,
     "cmake.sourceDirectory": "${workspaceFolder}/.pio/libdeps/view/Adafruit BusIO",
+    "platformio-ide.useBuiltinPIOCore": false,
+	"platformio-ide.useBuiltinPython": false,
+	"platformio-ide.customPATH": "Your_Python_Path\\Scripts"
+
 }

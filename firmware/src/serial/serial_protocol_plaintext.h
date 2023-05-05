@@ -50,7 +50,6 @@ typedef struct
 
 
 typedef std::function<void(void)> DemoConfigChangeCallback;
-
 class SerialProtocolPlaintext : public SerialProtocol {
     public:
         SerialProtocolPlaintext(Stream& stream, MotorTask& motor_task) : SerialProtocol(), stream_(stream), motor_task_(motor_task) {}

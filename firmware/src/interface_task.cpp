@@ -17,7 +17,11 @@
 #include "btAudio.h"
 #include "freertos/FreeRTOS.h"
 #include "btAudio.h"
-
+#include "esp_system.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
+#include "freertos/queue.h"
+#include "esp_timer.h"
 #if SK_LEDS
 CRGB leds[NUM_LEDS];
 #endif
@@ -105,9 +109,9 @@ BleKeyboard bleKeyboard("NBTLE","ZC",100);
         0,
         1,
         90 * PI / 180,
-        1,
-        1,
-        0.55, // Note the snap point is slightly past the midpoint (0.5); compare to normal detents which use a snap point *past* the next value (i.e. > 1)
+        2,
+        3,
+        0.75, // Note the snap point is slightly past the midpoint (0.5); compare to normal detents which use a snap point *past* the next value (i.e. > 1)
         "On/off ",
         0,
         {},
@@ -194,7 +198,7 @@ BleKeyboard bleKeyboard("NBTLE","ZC",100);
 };
 
 
-
+uint8_t sw =0;
 //构造初始化运行
 InterfaceTask::InterfaceTask(const uint8_t task_core, MotorTask& motor_task, DisplayTask* display_task) : 
         Task("Interface", 6000, 1, task_core),
@@ -253,7 +257,7 @@ void InterfaceTask::run() {
         changeConfig(true);//在SerialProtocolPlaintext类中init()方法中调用changeConfig
     });
     //将现在协议，指向SerialProtocolPlaintext协议、
-    SerialProtocol* current_protocol = &proto_protocol_;
+    SerialProtocol* current_protocol = &Json_protocol_;
     //判断current_protocol通信协议为哪个
     //[this, &current_protocol]可以访问的列表，本类，当前协议指针，指定协议类型，
     //也就是说调用该方法，传入protocol值，即可修改使用的协议对象
@@ -276,23 +280,42 @@ void InterfaceTask::run() {
                 break;
         }
     };
-    //启用修改后的协议
-    plaintext_protocol_.setProtocolChangeCallback(protocol_change_callback);
-    proto_protocol_.setProtocolChangeCallback(protocol_change_callback);
-    
+    // //启用修改后的协议
+    // plaintext_protocol_.setProtocolChangeCallback(protocol_change_callback);
+    // proto_protocol_.setProtocolChangeCallback(protocol_change_callback);
+   
      //uint32_t last_idle_start = 0;
     uint32_t last_publish = 0;
 
     while (1) {
+        if(sw!=0){
+            switch (sw)
+            {
+            case 1:
+                sprintf(buf_,"protocol is  %d",sw);
+                log(buf_);
+                protocol_change_callback(SERIAL_PROTOCOL_LEGACY);
+                break;
+            case 2:
+                sprintf(buf_,"protocol is  %d",sw);
+                log(buf_);
+                protocol_change_callback(SERIAL_PROTOCOL_JSON);
+                break;
+            default:
+                break;
+            }
+            //sw = 0;
+        }
+        sw = 0;
         PB_SmartKnobState state;
-      
+         
         //主动上传
         if (xQueueReceive(knob_state_queue_, &state, 0) == pdTRUE  ) {
             //
             current_protocol->handleState(state);
         }
         current_protocol->loop();
-
+         
         std::string* log_string;
         while (xQueueReceive(log_queue_, &log_string, 0) == pdTRUE) {
             current_protocol->log(log_string->c_str());
@@ -301,16 +324,7 @@ void InterfaceTask::run() {
         }
 
         updateHardware(&state);
-        // if (millis() - last_publish > 500) {
-        //     char *buf = (char*)malloc(40);
-        //     // vTaskGetRunTimeStats(buf);
-        //     // log(buf);
-        //     snprintf(buf_, sizeof(buf_), "esp_get_free_heap_size %d ",esp_get_free_heap_size());
-        //     log(buf_);
-        //     free(buf);
-        //     last_publish = millis();
-        // }
-        
+ 
         
     }
 }
@@ -318,7 +332,6 @@ void InterfaceTask::run() {
 void InterfaceTask::log(const char* msg) {
     // Allocate a string for the duration it's in the queue; it is free'd by the queue consumer
     std::string* msg_str = new std::string(msg);
-
     // Put string in queue (or drop if full to avoid blocking)
     xQueueSendToBack(log_queue_, &msg_str, 0);
 }
@@ -335,7 +348,7 @@ void InterfaceTask::changeConfig(bool next) {
         }
     }
     pages = current_config_;
-    char buf_[256];
+    
     //snprintf(buf_, sizeof(buf_), "Changing config to %d -- %s", current_config_, configs[current_config_].text);
     //log(buf_);
     motor_task_.setConfig(configs[current_config_]);

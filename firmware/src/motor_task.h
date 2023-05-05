@@ -42,7 +42,7 @@ class MotorTask : public Task<MotorTask> {
         void setLogger(Logger* logger);
         BLDCMotor motor = BLDCMotor(1);//设置电机(极对数)
         BLDCDriver6PWM driver = BLDCDriver6PWM(PIN_UH, PIN_UL, PIN_VH, PIN_VL, PIN_WH, PIN_WL);
-        uint8_t controltype =0 ;
+        uint8_t controltype = 0 ;
         float target =0 ;
         void run();
         double diff(double a,double b);

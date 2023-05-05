@@ -298,14 +298,14 @@ void MotorTask::run() {
                     }
                     float an_input = motor.shaft_angle - target + dead_zone_adjustment;
                     angle_torque = (abs(an_input)*0.9)+P;
-                    // snprintf(buf_, sizeof(buf_), "P = %f,controltype = %d an_input = %f,angle_torque = %f, target= %f,now_angle = %f,",i,controltype,an_input,angle_torque,target,motor.shaft_angle);
+                    // snprintf(buf_, sizeof(buf_), "controltype = %d an_input = %f,angle_torque = %f, target= %f,now_angle = %f,",controltype,an_input,angle_torque,target,motor.shaft_angle);
                     // log(buf_);
                     if(target<motor.shaft_angle)
                     {   
-                        log("turn left??");
+                        //log("turn left??");
                         motor.move(-angle_torque);
                      }else if(target>motor.shaft_angle)
-                    {   log("turn right??");
+                    {   //log("turn right??");
                         motor.move(angle_torque);
                     }   
                 }
@@ -316,7 +316,9 @@ void MotorTask::run() {
                 .current_position = config.position,
                 .sub_position_unit = -angle_to_detent_center / config.position_width_radians,
                 .has_config = true,
+                .now_angle = motor.shaft_angle,
                 .config = config,
+               
             });
             last_publish = millis();
         }

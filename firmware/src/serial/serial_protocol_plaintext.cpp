@@ -6,19 +6,15 @@
 #include <stdint.h>
 #include <math.h>
 #include "mt6701_sensor.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include <typeinfo>
-#include <iostream>
-#include <Arduino.h>
 
 //  #define my_debug2
 System_run_state runstate;
 System_run_state *prunstate = &runstate;
 uint8_t *p = (uint8_t*)prunstate; 
 Reterns_float s1,s2,s3,s4;
+extern BleKeyboard bleKeyboard; 
 extern uint8_t pages;
-
+//Sendconfig sys_data_tx;
 uint8_t SerialProtocolPlaintext::crc8_MAXIM(uint8_t *temp_data, uint8_t len)
 {
     uint8_t crc, i;
@@ -67,10 +63,10 @@ void SerialProtocolPlaintext::handleState(const PB_SmartKnobState& state) {
         if( pages == 0 ){
             
             if(state.current_position > latest_state_.current_position){
-                //bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
+                bleKeyboard.write(KEY_MEDIA_VOLUME_UP);
                 log("VOLUME_up");
             }else{
-                //bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);
+                bleKeyboard.write(KEY_MEDIA_VOLUME_DOWN);
                 log("VOLUME_DOWN");
             }
         }
@@ -79,10 +75,10 @@ void SerialProtocolPlaintext::handleState(const PB_SmartKnobState& state) {
         if (pages == 1 )
         {
             if(state.current_position > latest_state_.current_position){
-                //bleKeyboard.write(KEY_UP_ARROW);
+                bleKeyboard.write(KEY_UP_ARROW);
                 log("KEY_up");
             }else{
-                //bleKeyboard.write(KEY_DOWN_ARROW);
+                bleKeyboard.write(KEY_DOWN_ARROW);
                 log("KEY_DOWN");
             }
 
@@ -91,11 +87,11 @@ void SerialProtocolPlaintext::handleState(const PB_SmartKnobState& state) {
           if (pages == 2 )
         {
             if(state.current_position > latest_state_.current_position){
-                //bleKeyboard.write(KEY_RIGHT_ARROW);
+                bleKeyboard.write(KEY_RIGHT_ARROW);
                 log("KEY_RIGHT");
             }else{
-               // bleKeyboard.write(KEY_LEFT_ARROW);
-               // log("KEY_LEFT");
+                bleKeyboard.write(KEY_LEFT_ARROW);
+                log("KEY_LEFT");
             }
 
         }   
@@ -199,7 +195,10 @@ float hex_to_float(uint32_t hex)
 //组合数据
 void SerialProtocolPlaintext::Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8_t Specific_data,uint8_t datalen)  
 {
-
+    #ifdef my_debug
+        stream_.println("Adjust_SmartKnobConfig"); 
+    #endif
+    
     //将接收参数组合
    switch (datalen-8)
    {
@@ -224,7 +223,7 @@ void SerialProtocolPlaintext::Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8
     PB_SmartKnobConfig* myc = &configs[Specific_Mode];
     uint8_t **temp_buf;
     //修改指定数值
-     switch (Specific_data)
+    switch (Specific_data)
         {
             case 0x00://配置模式初始值
                 myc->position = temp_data;
@@ -285,102 +284,112 @@ void SerialProtocolPlaintext::Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8
             default:
             break;
         }
- 
+
+    
     motor_task_.setConfig(*myc);
     
+    
 }
 
+extern uint8_t sw ;
+// #define my_debug 
 void SerialProtocolPlaintext::loop() 
 {
-//   do
-//     {
-//      rec_len = stream_.available(); 
-//       if(rec_len!=0 ){
-//          for(uint8_t i=0;i<rec_len;i++){ 
-//                 Recv_buf[i] = stream_.read();
-//          } 
-//     }
-//     } while (stream_.available());//确定没有数据
-
-    
- // = (char *)malloc(2046); 
- //= (char *)malloc(1024);
-
-        // motor_task_.motor_task_.motor.monitor();
-        // motor_task_.motor_task_.motor.disable();
-
-
-
-//     //帧头帧尾数据长度校验
-    // if(rec_len-1 == Recv_buf[3] && Recv_buf[0]== 0xc8 && Recv_buf[rec_len-1] == crc8_MAXIM(Recv_buf,rec_len-1))//处理数据流
-    // {  
+  do
+    {
+     rec_len = stream_.available(); 
+      if(rec_len!=0 ){
+         for(uint8_t i=0;i<rec_len;i++){ 
+                Recv_buf[i] = stream_.read();
+         } 
+    }
+    } while (stream_.available());//确定没有数据
+   
+    //帧头帧尾数据长度校验
+    if(rec_len-1 == Recv_buf[3] && Recv_buf[0]== 0xc8 && Recv_buf[rec_len-1] == crc8_MAXIM(Recv_buf,rec_len-1))//处理数据流
+    {  
             
-    //     #ifdef my_debug
-    //     stream_.println("into annalzy chuli"); 
-    //     #endif 
+        #ifdef my_debug
+        stream_.println("into annalzy chuli"); 
+        #endif 
 
-    //     switch (Recv_buf[2])
-    //     {
-    //         case 0x05://读取寄存操作
-    //             switch (Recv_buf[4])
-    //             {
-    //                 case  0x01:
-    //                    send_system_state(Recv_buf[5],Recv_buf[6],latest_state_);//发送系统运行状态
-    //                 break;                                   
-    //                 default:
-    //                 break;
-    //                 //发送反馈帧
-    //                 esp32_serial_send(Recv_buf,rec_len);
-    //             }
+        switch (Recv_buf[2])
+        {
+
+            case 0x04://读取寄存操作
+                switch (Recv_buf[4])
+                {
+                     case 0x02:
+                        sw = Recv_buf[5];
+                    break;                             
+                    default:
+                    break;
+                    //发送反馈帧
+                    esp32_serial_send(Recv_buf,rec_len);
+                }
         
-    //         break;
-            
-    //         case 0x06://写入修改寄存器操作
-    //             switch (Recv_buf[4])
-    //             {
-    //                 case 0x02://写入运行寄存器
+            break;             
+            case 0x05://读取寄存操作
+                switch (Recv_buf[4])
+                {
+                    case  0x01:
+                       send_system_state(Recv_buf[5],Recv_buf[6],latest_state_);//发送系统运行状态
+                    break;                                    
+                    default:
+                    break;
+                    //发送反馈帧
+                    esp32_serial_send(Recv_buf,rec_len);
+                }
+        
+            break;
+            case 0x06://写入修改寄存器操作
+                switch (Recv_buf[4])
+                {
+                    case 0x02://写入运行寄存器
 
-    //                     switch (Recv_buf[5])
-    //                     {   case 0x0a:
-    //                         //限制起始位，与结束位
-    //                             if(rec_len <= 9 &&  0x0B > Recv_buf[7] && Recv_buf[6]< Recv_buf[7]){
-    //                                 output_io =true;
-    //                                 start = Recv_buf[6];
-    //                                 end = Recv_buf[7];
-    //                             } 
-    //                         break;
-    //                          case 0x0b:
+                        switch (Recv_buf[5])
+                        {   case 0x0a:
+                            //限制起始位，与结束位
+                                if(rec_len <= 9 &&  0x0B > Recv_buf[7] && Recv_buf[6]< Recv_buf[7]){
+                                    output_io =true;
+                                    start = Recv_buf[6];
+                                    end = Recv_buf[7];
+                                } 
+                            break;
+                             case 0x0b:
                 
-    //                                 output_io = false;
-    //                         break;
-    //                         case 0x0c:
-    //                             motor_task_.runCalibration();
-    //                         break;
+                                output_io = false;
+                            break;
+                            case 0x0c:
+                                motor_task_.runCalibration();
+                            break;
                            
-    //                         default:
-    //                          //切换模式&调整模式参数
-                                 //Adjust_SmartKnobConfig(Recv_buf[5],Recv_buf[6],rec_len);
-    //                         break;
-    //                     }
-    //                     esp32_serial_send(Recv_buf,rec_len);
-    //                 break;
-    //             default:
-    //             break;
-    //             }
+                            default:
+                             //切换模式&调整模式参数
+                                Adjust_SmartKnobConfig(Recv_buf[5],Recv_buf[6],rec_len);
+                            break;
+                        }
+                        esp32_serial_send(Recv_buf,rec_len);
+                    break;
+                default:
+                break;
+                }
                         
-    //         break; 
-    //     default:
-    //     break;      
+            break; 
+        default:
+        break;      
                
-    //     }
+        }
               
-    //     }
-    //     rec_len =0; 
+        }
+        rec_len =0; 
        
+    
+    
     
 }
 
-
+extern PB_SmartKnobConfig configs[];
 
 void SerialProtocolPlaintext::changeConfigtoSpecific(uint8_t mode) 
 {

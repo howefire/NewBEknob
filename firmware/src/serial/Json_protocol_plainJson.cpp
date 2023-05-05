@@ -10,19 +10,9 @@
 #include <Arduino.h>
 extern float target;
 uint8_t strle;
-PB_SmartKnobConfig motor_configs[] = {
+
+ PB_SmartKnobConfig motor_configs[] = {
    
-    // int32_t position; 配置模式初始值
-    // int32_t min_position;最小限位值
-    // int32_t max_position;最大限位值
-    // float position_width_radians;最大最小值限位点周长
-    // float detent_strength_unit;反馈强度设置
-    // float endstop_strength_unit;限位强度
-    // float snap_point;喀啪输出时机点
-    // char text[51];模式描述
-    // pb_size_t detent_positions_count;
-    // int32_t detent_positions[5];增加喀啪检测点
-    // float snap_point_bias;
     {
         0,
         0,
@@ -31,13 +21,12 @@ PB_SmartKnobConfig motor_configs[] = {
         0,
         0,
         1.1,
-        "angle_contorl_mode ",
+        "nangle_mode",
         0,
         {},
         0,
     },
-};
-
+    };
 extern uint8_t pages;
 extern PB_SmartKnobConfig configs[];
 void SerialProtocolJson::handleState(const PB_SmartKnobState& state) {
@@ -94,10 +83,11 @@ void SerialProtocolJson::handleState(const PB_SmartKnobState& state) {
     }
     latest_state_ = state;
 }
-// void SerialProtocolJson::log(const char* msg) {
-//     //stream_.print("LOG: ");
-//     stream_.println(msg);
-// }
+
+void SerialProtocolJson::log(const char* msg) {
+    //stream_.print("LOG: ");
+    stream_.println(msg);
+}
 
 template<typename T>
 void SerialProtocolJson::Json_Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8_t Specific_data,T data)  
@@ -159,73 +149,60 @@ void SerialProtocolJson::Json_Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8
     
 }
 
-
+extern uint8_t sw ;
 void SerialProtocolJson::Json_Analyze_func(cJSON* root)
 {
 
  if(root ==NULL){
     return;
    }else{
-
-        cJSON* spmode = cJSON_GetObjectItem(root,"mode");  
-        if(strcmp(spmode->valuestring, "angle") == 0)
+        cJSON* mode = cJSON_GetObjectItem(root,"mode");
+        cJSON* data = cJSON_GetObjectItem(root,"data");
+        cJSON* type = cJSON_GetObjectItem(root,"type");
+        if(strcmp(mode->valuestring, "setEventFeedback") == 0){
+        cJSON* serialDataType = cJSON_GetObjectItem(data,"serialDataType");
+           if (strcmp(serialDataType->valuestring, "bin") == 0)
+            {
+                sw = 1;
+            }else{
+                sw = 2;
+            }
+        }else if(strcmp(mode->valuestring, "angle") == 0)
         {//切换显示
             motor_task_.setConfig(motor_configs[0]);
+            //切换控制
             motor_task_.controltype = 2 ;
-            cJSON* type = cJSON_GetObjectItem(root,"type");
-            cJSON* data = cJSON_GetObjectItem(root,"data");
             if (strcmp(type->valuestring, "set") == 0)
             {
                cJSON* value = cJSON_GetObjectItem(data,"value");
                stream_.printf("data = %lf\r\n",value->valuedouble);
                motor_task_.target = (float)value->valuedouble;
-               
-            
-             }
-        }else if(strcmp(spmode->valuestring, "angle") == 0)
+            }
+        } else if(strcmp(data->valuestring, "promise") == 0)
         {
-            
-
-
-
+            cJSON* switchType = cJSON_GetObjectItem(data,"switchType");
+            PB_SmartKnobConfig* myc = &configs[4];
+             
+            if(strcmp(switchType->valuestring, "selfLocking")==0)
+            {
+              myc->snap_point_bias= 0.6f;
+              myc->snap_point=0.75f;
+              //myc->endstop_strength_unit = (float)torque->valuedouble;
+            }
+        } else if(strcmp(data->valuestring, "limit") == 0)
+        {
+            cJSON* torque = cJSON_GetObjectItem(data,"torque");
+            cJSON* switchType = cJSON_GetObjectItem(data,"switchType");
+            PB_SmartKnobConfig* myc = &configs[4];
+             
+            if(strcmp(switchType->valuestring, "selfLocking")==0){
+              stream_.println("cash3");
+              myc->snap_point_bias= 0.6f;
+              stream_.println("cash4");
+              myc->snap_point=0.75f;
+              //myc->endstop_strength_unit = (float)torque->valuedouble;
+            }
         }
-        // cJSON* spdata = cJSON_GetObjectItem(root,"type");
-        // cJSON* doubledata  =  cJSON_GetObjectItem(root,"double");
-        // cJSON* intdata  =  cJSON_GetObjectItem(root,"int");
-        // cJSON* arry  =  cJSON_GetObjectItem(root,"Array");
-        // cJSON* angle = cJSON_GetObjectItem(root,"angle");
-        // if(spmode)
-        // {
-        //     doubledata = NULL; //互斥锁确保一次只能对一个数据进行修改
-        //     intdata = NULL;
-        //     angle =   NULL;
-        //     // for(uint16_t i =0;i<cJSON_GetArraySize(arry);i++){chardata[i] = cJSON_GetArrayItem(arry,i)->valueint;}
-        //     // stream_.printf("arry = %s",chardata);
-        //     strle=strlen(arry->valuestring);
-        //     Json_Adjust_SmartKnobConfig<char*>(spmode->valueint,spdata->valueint,(char*)arry->valuestring);
-        // }
-        // if(doubledata){//如果是浮点
-        //     arry = NULL; //互斥锁确保一次只能对一个数据进行修改
-        //     intdata = NULL;
-        //     angle =   NULL;
-        //     //stream_.printf("doubldata =%s type =%d",cJSON_Print(doubledata),doubledata->type);
-        //     Json_Adjust_SmartKnobConfig<float*>(spmode->valueint,spdata->valueint,(float*)&doubledata->valuedouble);
-        // }
-        // if(intdata){//如果是整形数字
-        //     arry = NULL; //互斥锁确保只能对一个数据进行修改
-        //     doubledata = NULL;
-        //     angle =   NULL;
-        //     //stream_.printf("spmode = %d spdata=%d intdata =%d type =%d",spmode->valueint,
-        //     //spdata->valueint,intdata->valueint,intdata->type);
-            
-        //     Json_Adjust_SmartKnobConfig<int32_t*>(spmode->valueint,spdata->valueint,(int32_t*)&intdata->valueint);
-        // }     
-        // if(angle){
-           
-              
-        // }
-   
-   
    }
 
 }

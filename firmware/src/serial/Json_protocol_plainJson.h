@@ -18,17 +18,19 @@ class SerialProtocolJson: public SerialProtocol{
     stream_(stream),
     motor_task_(motor_task){}
     ~SerialProtocolJson(){}
-
-    void log(const char* msg) override {};
+   
+    void log(const char* msg) override ;
     void loop() override;
     void handleState(const PB_SmartKnobState& state) override;
     void Json_Analyze_func(cJSON* root);//以后你就属于我字写的类啦哈哈
     template<typename T>
     void Json_Adjust_SmartKnobConfig(uint8_t Specific_Mode,uint8_t Specific_data,T data);  
-    
+
     char recvdata[2048];
     private:
         Stream& stream_;
         MotorTask& motor_task_;
         PB_SmartKnobState latest_state_ = {};
+        
+        
 };

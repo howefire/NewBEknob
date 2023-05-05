@@ -1,258 +1,91 @@
-# SmartKnob
-SmartKnob is an open-source input device with software-configurable endstops and virtual detents.
+智能旋钮项目 简介： 本项目基于国外开源smartknob修改而来，添加了json,和二进制传输的modbus通信协议层.可以更好的对接不同智能家居设备，还有bluHID键盘功能，可以输出上下左右，控制浏览网页，优化电机控制算法，使旋钮拥有更好输出手感，更强，更准确的反馈力度，并添加了多种电机控制模式，模拟如棘轮,自锁开关等效果
 
-A brushless gimbal motor is paired with a magnetic encoder to provide closed-loop torque feedback control, making it
-possible to dynamically create and adjust the feel of detents and endstops.
+特征： 240x240圆形LCD（“GC9A01”），由摆陀上的39.5mm手表玻璃保护 BLDC万向节电机，带有空心轴，用于机械和电气连接LCD。 搭载 ESP32-PICO-V3-02 （Lilygo TMicro32 Plus 模组） 用于压力检测的PCB弯曲和应变片（通过电机提供触觉反馈） 8 个侧照式 RGB LED （SK6812-SIDE-A） 点亮旋钮周围的环 USB-C （2.0） 连接器，用于 5V 电源和串行数据/编程 （CH340） VEML7700 环境光传感器，用于自动背光和 LED 强度调节 用于安装的多功能背板 - 使用 4 个螺钉或 2 个 3M 中型命令条（带有用于在安装后访问拆卸卡舌的切口） 前盖卡入式，便于检修印刷电路板 现状：不建议用于一般用途（根据电机/电子设备的可用性，可能需要进行机械和电气修订
 
-Join the [Discord community](https://discord.gg/5jyhjcbTnR) to discuss the project with others, show off your build, or help answer each others' questions!
+目录介绍: Firmware 固件代码 平台为platformIO，项目核心代码全部基于此 其中src为项目核心文件夹，serial为通信协议层文件 代码基本逻辑，一个电机任务，一个显示任务，一个接口任务。 接口任务初始化了显示功能，协议层功能，电机功控制功能。
 
-[![Build Status](https://github.com/scottbez1/smartknob/actions/workflows/electronics.yml/badge.svg?branch=master)](https://github.com/scottbez1/smartknob/actions/workflows/electronics.yml)
-[![Build Status](https://github.com/scottbez1/smartknob/actions/workflows/pio.yml/badge.svg?branch=master)](https://github.com/scottbez1/smartknob/actions/workflows/pio.yml)
+doc 项目图片以及原件图片
 
-# Designs
+未来计划：
 
-## SmartKnob View
-The "SmartKnob View" is the premium SmartKnob experience with an integrated display shown in my [demo video](https://www.youtube.com/watch?v=ip641WmY4pA). Under active development.
+考虑改用 ESP32-S3-MINI-1 模块（一旦 Arduino 核心支持完成），因为这将允许直接支持 USB HID（用于计算机的操纵杆/宏键盘类型输入）
 
-🎉 **Motors are [now available](https://www.sparkfun.com/products/20441)!** If you've been following this project,
-you'll know that the recommended motors went out of stock nearly immediately after it was published.
-Thanks to [the community](https://github.com/scottbez1/smartknob/issues/16#issuecomment-1094482805%5D), we were able to
-identify the likely original manufacturer, and recently SparkFun Electronics has been getting them produced and regularly
-[stocking them](https://www.sparkfun.com/products/20441)! (However, they've been selling out quickly each time they restock, so definitely sign up for backorder notifications if they're out of stock when you check). Thanks to everyone who helped search and investigate different
-motor options along the way!
+配置wifi并工作（可能是MQTT？当前内存是全屏帧缓冲精灵的问题。PSRAM可能会解决这个问题（需要更新的ESP-IDF和未发布的Arduino内核，从简短的测试中，我在启用PSRAM的情况下获得了可怕的性能），或者下一项可能有助于减少内存： 迁移到 LVGL，以获得更好的显示渲染和轻松支持菜单等。不应该在内存中要求完整的 240x240x24b 帧缓冲，释放一些用于 wifi 等。 家庭助理集成或其他实际应用
 
-Features:
- - 240x240 round LCD ("GC9A01"), protected by 39.5mm watch glass on rotor
- - BLDC gimbal motor, with a hollow shaft for mechanically & electrically connecting the LCD
- - Powered by ESP32-PICO-V3-02 (Lilygo TMicro32 Plus module)
- - PCB flexure and strain gauges used for press detection (haptic feedback provided via the motor)
- - 8 side-firing RGB LEDs (SK6812-SIDE-A) illuminate ring around the knob
- - USB-C (2.0) connector for 5V power and serial data/programming (CH340)
- - VEML7700 ambient light sensor for automatic backlight & LED intensity adjustment
- - Versatile back plate for mounting - use either 4x screws, or 2x 3M medium Command strips (with cutouts for accessing removal tabs after installation)
- - Front cover snaps on for easy access to the PCB
+屏幕印刷电路板
 
-**Current status:** Not recommended for general use (mechanical and electrical revisions may be needed depending on motor/electronics availability)
+订购说明：每个机械设计必须为 1.2 毫米厚（不是“标准”1.6 毫米）。
 
-### Demo video
+屏幕PCB上没有足够的组件，我选择手工焊接它们而不是用焊膏回流 和模板，但如果您订购模板，请参阅上面的注释，了解选择“自定义尺寸”以使其更容易 处理并节省运费。还要确保仅选择底部;所有组件都在底部 屏幕一侧的印刷电路板。
 
-<a href="https://www.youtube.com/watch?v=ip641WmY4pA">
-    <img src="https://img.youtube.com/vi/ip641WmY4pA/maxresdefault.jpg" width="480" />
-</a>
+自动生成的最新（未经测试且可能已损坏！⚠️:
 
-### How it works
-<a href="https://www.youtube.com/watch?v=Q76dMggUH1M">
-    <img src="https://img.youtube.com/vi/Q76dMggUH1M/maxresdefault.jpg" width="480" />
-</a>
+图解的
 
-### 3D CAD
+交互式物料清单
 
-![Exploded view](doc/img/explodedv145.gif)
+印刷电路板数据包
 
-Latest Fusion 360 Model: https://a360.co/3BzkU0n
+格伯斯
 
-### Build your own?
+常见问题 （FAQ）
 
-While this is a "DIY" open-source project, it is not yet a mature plug-and-play project. If you intend to build your own, note that it requires advanced soldering experience to build - very small-pitch surface-mount soldering is required (reflow or hot air recommended), and assembly is quite time-consuming and delicate. Please go into it with the expectation that you will almost certainly need to be able to troubleshoot some hardware and firmware issues yourself - I recommend reviewing/understanding the schematics and basic firmware before jumping in!
+它适用于 XYZ 吗？
 
-More documentation on the BOM and what parts you need to order is coming in the future - thanks so much for your interest! Follow me on [Twitter](https://twitter.com/scottbez1) for the latest updates on this and other projects.
+还没有，不管你想到什么“XYZ”。到目前为止，我只为视频中显示的演示实现了足够的固件，因此您实际上还不能将其用于任何富有成效的事情。基本的止动配置 API 在那里，但没有太多其他内容。许多固件工作仍有待完成。如果您构建一个，我希望您帮助添加对“XYZ”的支持！
 
-View the latest auto-generated (untested) [Base PCB Interactive BOM](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-ibom.html) and [Screen PCB Interactive BOM](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-ibom.html) (or, the combined [BOM csv](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-bom.csv)) for electronics/hardware parts list. ⚠️ These are auto-generated from the latest untested revision on GitHub. For tested/stable/recommended artifacts, use a [release](https://github.com/scottbez1/smartknob/releases) instead.
+我可以购买套件或已经组装好的吗？
 
-A few miscellaneous notes in the meantime:
+应该不会吧？或者至少，我没有任何立即计划自己出售它们。不是我不想让你开心，但硬件是一项艰苦的工作，我只是在空闲时间做这些东西。
 
- - This can _probably_ be FDM 3D printed with a well-tuned printer, but the parts shown in videos/photos were MJF printed in nylon for tight tolerances and better surface finish
- - If you wanted a simpler build, you could omit the LCD and just merge the knob + glass from the model into a single STL to get a closed-top knob
- - There's limited space inside the LCD mount for wiring, and 8 wires need to fit through the hole in the center. I used 30 AWG wire-wrapping wire. Enamel-coated wire would probably work too.
- - Strain gauges are BF350-3AA, and glued in place with CA glue (I'll include video of this process in the future, but essentially I used kapton tape to pick up the strain gauge and hold it in place during curing). This has to be done after reflow soldering, and would be hard to remove/fix in case of a mistake, so MAKE SURE TO PRACTICE GLUING strain gauges to other items before attempting on the PCB!
- - The TMC6300 is _tiny_ and has a bottom pad, so I would seriously consider getting a stencil along with the PCB order. Even with the stencil I needed to manually clean up some bridging afterward; I _highly_ recommend Chip Quik NC191 gel flux, available on [Amazon](https://amzn.to/3MGDSr5) (or use this [non-affiliate link](https://www.amazon.com/Smooth-Flow-No-Clean-syringe-plunger/dp/B08KJPG3NZ) instead) or from your electronics distributor of choice. Flux is also very helpful when soldering the LCD ribbon cable to to screen PCB.
- - For breadboard prototyping, the [TMC6300-BOB](https://www.trinamic.com/support/eval-kits/details/tmc6300-bob/) is awesome and way easier to work with than the bare chip if you just want to play around with low current BLDC motors
- - For AliExpress purchases: I highly recommend **only** using AliExpress Standard Shipping (purchasing in the US). I have had multiple purchases take months or never get delivered when purchased with Cainiao or other low cost shipping options, whereas AliExpress Standard is very reliable and generally faster in my experience.
- - Make sure to check the [open issues](https://github.com/scottbez1/smartknob/issues) - this design is not yet "stable", so beware that everything may not go smoothly. I would not recommend ordering these parts yourself until the [stable release v1.0 milestone](https://github.com/scottbez1/smartknob/milestone/1) is complete, as there are some mechanical interference issues in the current revision.
+它是开源的，有一个相当宽松的许可证，所以理论上任何人都可以开始提供套件/组件。如果有人确实走上了出售它们的路线，请注意需要署名（如果您心情愉快，我不会拒绝版税/提示/感谢🙂).
 
-Future plans:
- - consider switch to using an ESP32-S3-MINI-1 module (once Arduino core support is complete), as that would allow for direct USB HID support (for joystick/macro-pad type input to a computer)
- - Bluetooth HID support?
- - get wifi configured and working (probably MQTT?). Currently memory is an issue with the full display framebuffer sprite. PSRAM might fix this (requires newer ESP-IDF & unreleased Arduino core, and from a brief test I got horrible performance with PSRAM enabled), or the next item might help reduce memory:
- - migrate to LVGL, for better display rendering and easy support for menus, etc. Shouldn't require a full 240x240x24b framebuffer in memory, freeing some for wifi, etc.
- - Home Assistant integration, or other real-world applications
- - ???
- - [Profit](https://github.com/sponsors/scottbez1/) 😉
+固件和软件 有关固件和软件（以及如何开始使用）的更多文档，请参阅专用的 SmartKnob 固件和软件指南
 
+一般组件信息 磁性编码器 MT6701 （美格泰克） 优秀的传感器，价格合理 - 强烈推荐。使用SSI时噪声比TLV493D更低，响应更快（控制回路更稳定）。
 
-#### Base PCB
+许多 IO 选项 - SSI、I2C 和 ABZ - 应该提供良好的响应延迟 SSI 包括用于验证数据的 CRC 无掉电或低功耗选项 - 可能不适合电池供电设备 美国分销商（Mouser、Digi-Key）不提供 数据表
 
-<a href="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-front-3d.png">
-    <img src="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-front-3d.png" width="300" />
-</a>
-<a href="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-back-3d.png">
-    <img src="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-back-3d.png" width="300" />
-</a>
+订购（LCSC）
 
-Ordering notes: use white soldermask, for reflecting light from RGB LED ring around the knob. Should be 1.2mm thick (not "standard" 1.6mm).
+TLV493D （英飞凌） 未在 SmartKnob 视图中使用，但通常是一种常见/流行的磁编码器。对于触觉反馈实现来说，这是一个平庸的选择。使用Adafruit的QWIIC分线板易于原型设计。
 
-If you are ordering a stencil for solder paste from JLCPCB and plan to apply paste by hand (as
-[shown in the video](https://youtu.be/Q76dMggUH1M?t=372)) without a stencil frame/machine, make sure to select
-**"Customized size"** and enter smaller dimensions (e.g. 100mm x 100mm) to avoid getting a much larger stencil than you
-need. This will also likely reduce the cost of shipping substantially! Also, select only the **Top** side; the bottom
-only has 2 SMT components - the motor connector and VEML7700 ALS - so it's not worth getting a stencil for that.
+在我的测试中，它很嘈杂，需要过滤/平滑，这会降低响应速度，损害控制回路的稳定性。或者，滤波较少，噪声 很容易被PID电机扭矩控制器中的衍生组件“放大”，引起可听见（和触觉）嗡嗡声/嗡嗡声。
 
-Latest auto-generated (untested and likely broken!) artifacts⚠️:
+但更大的问题是，显然存在一个已知的硅问题，导致内部ADC有时完全锁定，需要完全复位和重新配置，这可能会导致数据延迟/间隙！请参阅部分 5.6 在用户手册中
 
-[Schematic](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-schematic.pdf)
+In the Master Controlled Mode (MCM) or the Fast Mode (FM) the ADC conversion may hang up. A hang up can be detected by:
 
-[Interactive BOM](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-ibom.html)
+Frame Counter (FRM) counter stucks and does not increment anymore. 根据我测试 4 种不同的 Adafruit 分线板的经验，其中 2 个 （50%） 在使用后一两分钟内经常表现出这种锁定行为。可以检测和自动重置（项目中有代码可以这样做），但它很慢，如果传感器经常锁定，可能会导致不希望的跳跃/延迟。
+数据表
 
-[PCB Packet](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-pcb-packet.pdf)
+AS5600 （AMS） 一个平庸的选择。便宜的分线板随时可用。
 
-[Gerbers](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_base-jlc/gerbers.zip)
+在我的测试中，它相当嘈杂（传闻比 TLV493d 更嘈杂），需要滤波/平滑，这会降低响应速度，损害控制环路稳定性。此外，它的磁场强度低于我测试的其他传感器，当与强钕直径磁铁（如径向磁铁 8）一起使用时，需要明显的气隙（10-8995 毫米）。
 
-⚠️ For tested/stable/recommended artifacts, use a [release](https://github.com/scottbez1/smartknob/releases) instead.
+数据表
 
-#### Screen PCB
+电机驱动器 TMC6300-LA 这是一个相对较新的IC，是一个完美的匹配！通常没有任何其他驱动器（带有集成FET）满足本项目中使用的低压和低电流电机的要求（DRV8316 可能工作，但尚未经过测试）。
 
-<a href="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-front-3d.png">
-    <img src="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-front-3d.png" width="300" />
-</a>
-<a href="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-back-3d.png">
-    <img src="https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-back-3d.png" width="300" />
-</a>
+突出：
 
-Ordering notes: Must be 1.2mm thick (not "standard" 1.6mm) per mechanical design.
+2-11V直流电机电源输入 高达 1.2A 有效值 微型 （3x3mm QFN） 数据表
 
-There are few enough components on the Screen PCB that I chose to hand-solder them rather than reflow with solder paste
-and a stencil, but if you order a stencil, see the note above about selecting a "Customized size" to be easier to
-handle and save on shipping. Also make sure to select the **Bottom** side only; all the components are on the bottom
-side of the screen PCB.
+产品页面
 
-Latest auto-generated (untested and likely broken!) artifacts⚠️:
+电机 32mm转子，空心轴，直径磁铁
 
-[Schematic](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-schematic.pdf)
+32mm转子 15mm总高度（包括磁铁），12.75mm高（不含磁铁），9mm转子高度 低/零齿槽效应 - 非常适合完全平滑的输入 5.9毫米空心轴 内置编码器直径磁铁 经过验证的选项 总的来说，这是最容易上手的电机。低齿槽效应和内置直径磁铁很棒！
 
-[Interactive BOM](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-ibom.html)
+可从SparkFun获得！
 
-[PCB Packet](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-pcb-packet.pdf)
+确认 这个项目的灵感很大程度上来自Jesse Schoch的视频“触觉纹理和虚拟支架”和 在SimpleFOC社区中进行相应的讨论。说真的，如果没有那个视频，这个项目就不会存在 - 谢谢杰西！
 
-[Gerbers](https://smartknob-artifacts.s3.us-west-1.amazonaws.com/master/electronics/view_screen-jlc/gerbers.zip)
+许可证 本项目根据Apache v2（软件，电子，文档）和知识共享署名4.0（硬件/机械）（请参阅许可证.txt和知识共享）进行许可。
 
-⚠️ For tested/stable/recommended artifacts, use a [release](https://github.com/scottbez1/smartknob/releases) instead.
+Copyright 2022 Scott Bezek
 
+Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License. You may obtain a copy of the License at
 
-## SmartKnob Mini
-Planned for the future.
-
-
-# Frequently Asked Questions (FAQ)
-
-**How much does it cost?**
-
-I wish I could tell you now, but I don't actually know off the top of my head. Check back soon - I've only built a few so far, which was the result of a bunch of tinkering and prototyping over an extended period, so I don't have all the expenses tallied up yet. Probably less than $200 in parts? But some items have gotten more expensive, and you may be limited by minimum order quantities or shipping charges from multiple separate suppliers.
-
-**Does it work with XYZ?**
-
-Not yet, regardless of whatever "XYZ" you're thinking of. So far I've only implemented enough firmware for the demo shown in the video, so you can't actually use it for anything productive yet. The basic detent configuration API is there, but not much else. Lots of firmware work remains to be done. If you build one, I'd love your help adding support for "XYZ" though!
-
-**Can I buy one as a kit or already assembled?**
-
-Probably not? Or at least, I don't have any immediate plans to sell them myself. It's not that I don't want you to be happy, but hardware is a hard business and I just work on this stuff in my free time.
-
-It's open source with a fairly permissive license though, so in theory anyone could start offering kits/assemblies. If someone does go down that route of selling them, note that attribution is
- _required_ (and I wouldn't say no to [royalties/tips/thanks](https://github.com/sponsors/scottbez1/) if you're in a giving mood 🙂).
-
-# Firmware and Software
-More extensive documentation of the firmware and software (and how to get started) can be found in the dedicated [SmartKnob Firmware and Software Guide](https://paper.dropbox.com/doc/SmartKnob-firmware-and-software--Byho6npe9XvZLZLxJ_8bK5TqAg-VUb9nq7btuhnHw5KlgJIH#:h2=Calibration)
-
-## General Component Info
-
-### Magnetic encoders
-
-#### MT6701 (MagnTek)
-Excellent sensor at a reasonable price - highly recommended. Less noisy than TLV493D, and more responsive (control loop is more stable) using SSI.
-
- - Lots of IO options - SSI, I2C, and ABZ - should offer good response latency
- - SSI includes CRC to validate data
- - No power-down or low-power options - may not be ideal for battery-powered devices
- - Not available from US distributors (Mouser, Digi-Key)
-
-[Datasheet](http://www.magntek.com.cn/upload/MT6701_Rev.1.5.pdf)
-
-[Ordering (LCSC)](https://lcsc.com/product-detail/Angle-Linear-Position-Sensors_Magn-Tek-MT6701CT-STD_C2856764.html)
-
-#### TLV493D (Infineon)
-Not used in the SmartKnob view, but a common/popular magnetic encoder in general. It's a mediocre choice for a haptic feedback implementation. Easy to prototype with using [Adafruit's QWIIC breakout board](https://www.adafruit.com/product/4366).
-
-In my testing, it's noisy, requiring filtering/smoothing that can slow responsiveness, hurting control loop stability. Or, with less filtering, the noise
-can easily be "amplified" by the derivative component in the PID motor torque controller, causing audible (and tactile) humming/buzzing.
-
-But the bigger issue is that there is apparently a known silicon issue that causes the internal ADC to sometimes completely lock up, requiring a full reset and re-configuration, which can cause delays/gaps in data! See section
-5.6 in the [User Manual](https://www.infineon.com/dgdl/Infineon-TLV493D-A1B6_3DMagnetic-UM-v01_03-EN.pdf?fileId=5546d46261d5e6820161e75721903ddd)
-
-    In the Master Controlled Mode (MCM) or the Fast Mode (FM) the ADC conversion may hang up. A hang up can
-    be detected by:
-     - Frame Counter (FRM) counter stucks and does not increment anymore.
-
-In my experience testing 4 different Adafruit breakout boards, 2 of them (50%) regularly exhibit this lockup behavior within a minute or two of use. It is possible to detect and auto-reset (and there is code in the project to do so), but it is slow and may cause undesirable jumps/delays if the sensor locks up often.
-
-[Datasheet](https://www.mouser.com/datasheet/2/196/Infineon_TLV493D_A1B6_DataSheet_v01_10_EN-1227967.pdf)
-
-
-#### AS5600 (AMS)
-A mediocre choice. Cheap breakout boards are readily available.
-
-In my testing, it's fairly noisy (anecdotally, noisier than the TLV493d), requiring filtering/smoothing that can slow responsiveness, hurting control loop stability. Additionally, it saturates at a lower magnetic field strength than other sensors I tested, requiring a significant air gap (8-10mm) when used with a strong neodymium diametric magnet like [Radial Magnets 8995](https://www.digikey.com/en/products/detail/radial-magnets-inc/8995/5126077).
-
-[Datasheet](https://ams.com/documents/20143/36005/AS5600_DS000365_5-00.pdf)
-
-### Motor drivers
-#### TMC6300-LA
-This is a relatively new IC and it's a perfect match! There generally aren't any other drivers (with integrated fets) that meet the requirements for the low-voltage and low-current motors used in this project (DRV8316 might work, but has not been tested).
-
-Highlights:
- - 2-11V DC motor supply input
- - Up to 1.2A RMS
- - Tiny (3x3mm QFN)
-
- [Datasheet](https://www.trinamic.com/fileadmin/assets/Products/ICs_Documents/TMC6300_datasheet_rev1.07.pdf)
-
- [Product page](https://www.trinamic.com/products/integrated-circuits/details/tmc6300-la/)
-
-### Motors
-#### 32mm Rotor, Hollow Shaft, Diametric magnet
-<a href="doc/img/motors/PXL_20220121_221746595.jpg"><img src="doc/img/motors/PXL_20220121_221746595.jpg" width="200" /></a>
-<a href="doc/img/motors/PXL_20220121_221738745.jpg"><img src="doc/img/motors/PXL_20220121_221738745.jpg" width="200" /></a>
-
-
-- 32mm rotor
-- 15mm overall height (including magnet), 12.75mm height w/o magnet, 9mm rotor height
-- low/zero cogging - excellent for completely smooth input
-- 5.9mm hollow shaft
-- built-in diametric magnet for encoder
-- Proven option
-
-This is overall the easiest motor to get started with. Low cogging and a built-in diametric magnet are great!
-
-Available [from SparkFun](https://www.sparkfun.com/products/20441)!
-
-# Acknowledgements
-This project was greatly inspired by Jesse Schoch's video "[haptic textures and virtual detents](https://www.youtube.com/watch?v=1gPQfDkX3BU)" and the
-corresponding [discussion in the SimpleFOC community](https://community.simplefoc.com/t/haptic-textures/301). Seriously, this project wouldn't exist if not for that video - thank you Jesse!
-
-
-# License
-
-This project is licensed under Apache v2 (software, electronics, documentation) and Creative Commons Attribution 4.0 (hardware/mechanical) (see [LICENSE.txt](LICENSE.txt) and [Creative Commons](https://creativecommons.org/licenses/by/4.0/)).
-
-    Copyright 2022 Scott Bezek
-    
-    Licensed under the Apache License, Version 2.0 (the "License");
-    you may not use this file except in compliance with the License.
-    You may obtain a copy of the License at
-    
-        http://www.apache.org/licenses/LICENSE-2.0
-    
-    Unless required by applicable law or agreed to in writing, software
-    distributed under the License is distributed on an "AS IS" BASIS,
-    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-    See the License for the specific language governing permissions and
-    limitations under the License.
-
+http://www.apache.org/licenses/LICENSE-2.0
+Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language governing permissions and limitations under the License.

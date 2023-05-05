@@ -1,16 +1,17 @@
 import serial
 import json
-import time
+# import time
 # 打开串口
 ser = serial.Serial('COM15', 921600)
 # 发送 JSON 数据
 data ={
-	"mode":"angle",	
-	"type":"set",
-	"data":{
-		"value":7.2647
-	}
+    "mode":"setEventFeedback",
+    "data":{
+        "eventOutput":["serial","websocket","mqtt","callbackAPI"],
+        "serialDataType":"bin",
+    }
 }
+
 json_data = json.dumps(data).encode('utf-8')
 print(json_data)
 ser.write(json_data)

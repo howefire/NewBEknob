@@ -36,6 +36,7 @@ typedef struct _PB_SmartKnobState {
     int32_t current_position;
     float sub_position_unit;
     bool has_config;
+    float now_angle;
     PB_SmartKnobConfig config;
 } PB_SmartKnobState;
 

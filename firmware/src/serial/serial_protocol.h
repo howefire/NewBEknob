@@ -24,6 +24,7 @@ class SerialProtocol : public Logger {
 
         virtual void setProtocolChangeCallback(ProtocolChangeCallback cb) {
             protocol_change_callback_ = cb;
+         
         }
     
     protected:

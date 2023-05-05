@@ -5,6 +5,11 @@
 #include "font/roboto_light_60.h"
 //#include <BleKeyboard.h>
 #include <BluetoothSerial.h>
+#include <sstream>
+#include <string>
+
+
+#include <string>
 static const uint8_t LEDC_CHANNEL_LCD_BACKLIGHT = 0;
 //构造
 DisplayTask::DisplayTask(const uint8_t task_core) : Task{"Display", 2048, 1, task_core} 
@@ -49,7 +54,7 @@ void DisplayTask::run() {
 
     const int RADIUS = TFT_WIDTH / 2;
     const uint16_t FILL_COLOR = spr_.color565(255, 0, 10);
-    const uint16_t DOT_COLOR = spr_.color565(80, 100, 200);
+    const uint16_t DOT_COLOR = spr_.color565(0, 0, 255);
 
     spr_.setTextDatum(CC_DATUM);
     spr_.setTextColor(TFT_WHITE);
@@ -76,14 +81,18 @@ void DisplayTask::run() {
         int32_t line_y = TFT_HEIGHT / 2 + DESCRIPTION_Y_OFFSET;
         char* start = state.config.text;
         char* end = start + strlen(state.config.text);
-        while (start < end) {
+        char angle[20];
+        while (start < end) {       
+
           char* newline = strchr(start, '\n');
           if (newline == nullptr) {
             newline = end;
           }
-          
+           
           char buf[sizeof(state.config.text)] = {};
-          strncat(buf, start, min(sizeof(buf) - 1, (size_t)(newline - start)));
+          sprintf(angle,"%.2f°\n",state.now_angle/0.01745329);
+          spr_.drawString(String(angle), TFT_WIDTH / 2, 40, 1);
+          strncat(buf,start, min(sizeof(buf) - 1, (size_t)(newline - start)));
           spr_.drawString(String(buf), TFT_WIDTH / 2, line_y, 1);
           start = newline + 1;
           line_y += spr_.fontHeight(1);
@@ -95,9 +104,8 @@ void DisplayTask::run() {
           float range_radians = (state.config.max_position - state.config.min_position) * state.config.position_width_radians;
           left_bound = PI / 2 + range_radians / 2;
           float right_bound = PI / 2 - range_radians / 2;
-          char buf_ [60];
-          // snprintf(buf_, sizeof(buf_), "left_bound x= %.6f  left_bound y=%.6f",TFT_WIDTH/2 + RADIUS * cosf(left_bound),TFT_HEIGHT/2 - RADIUS *sinf(left_bound));
-          // log(buf_);
+          // snprintf(angle, sizeof(angle), "left_bound x= %.6f  left_bound y=%.6f",TFT_WIDTH/2 + RADIUS * cosf(left_bound),TFT_HEIGHT/2 - RADIUS *sinf(left_bound));
+          // log(angle);
 
           for(uint16_t i = 0 ;i<(state.config.max_position - state.config.min_position);i++){
             spr_.drawLine(TFT_WIDTH/2 + RADIUS * cosf(left_bound-i*state.config.position_width_radians), TFT_HEIGHT/2 - RADIUS * sinf(left_bound-i*state.config.position_width_radians),TFT_WIDTH/2 + (RADIUS - 10) * cosf(left_bound-i*state.config.position_width_radians),TFT_HEIGHT/2 - (RADIUS - 10) * sinf(left_bound-i*state.config.position_width_radians),TFT_WHITE);
@@ -123,7 +131,8 @@ void DisplayTask::run() {
         float raw_angle = left_bound - (state.current_position - state.config.min_position) * state.config.position_width_radians;
         float adjusted_angle = raw_angle - adjusted_sub_position;
 
-        if (num_positions > 0 && ((state.current_position == state.config.min_position && state.sub_position_unit < 0) || (state.current_position == state.config.max_position && state.sub_position_unit > 0))) {
+        if (num_positions > 0 && ((state.current_position == state.config.min_position && state.sub_position_unit < 0) || (state.current_position == state.config.max_position && state.sub_position_unit > 0))) 
+        {
 
           spr_.fillCircle(TFT_WIDTH/2 + (RADIUS - 10) * cosf(raw_angle), TFT_HEIGHT/2 - (RADIUS - 10) * sinf(raw_angle), 5, DOT_COLOR);
           if (raw_angle < adjusted_angle) {
